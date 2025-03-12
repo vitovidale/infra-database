@@ -4,30 +4,56 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  
+  workflow_dispatch:
 
 jobs:
   terraform-apply:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do Código
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configurar AWS CLI
+      - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Instalar Terraform
+      - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
 
-      - name: Inicializar Terraform
+      - name: Initialize Terraform
         run: terraform init
 
-      - name: Aplicar Configuração no AWS RDS
+      - name: Apply Terraform Configuration (Create RDS)
         run: terraform apply -auto-approve
+
+  setup-database:
+    needs: terraform-apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install PostgreSQL CLI
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Wait for RDS to be Available
+        run: |
+          echo "Waiting for RDS to be ready..."
+          sleep 120  # Wait for RDS to initialize
+
+      - name: Run Database Initialization Script
+        env:
+          DB_HOST: ${{ secrets.RDS_ENDPOINT }}
+          DB_USER: ${{ secrets.RDS_USERNAME }}
+          DB_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+          DB_NAME: ${{ secrets.RDS_DATABASE }}
+        run: |
+          export PGPASSWORD=$DB_PASSWORD
+          psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f init.sql
