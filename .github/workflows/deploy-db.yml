@@ -8,7 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+<<<<<<< HEAD
       # 1. Fazer checkout do código (para obter init.sql e demais arquivos)
+=======
+      # 1. Fazer checkout do repositório (certifica que main.tf e init.sql estão disponíveis)
+>>>>>>> origin/develop
       - name: Check out repository
         uses: actions/checkout@v3
 
@@ -22,9 +26,15 @@ jobs:
       - name: Terraform Init
         run: terraform init
         env:
+<<<<<<< HEAD
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
+=======
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+>>>>>>> origin/develop
 
       # 4. Terraform Plan
       - name: Terraform Plan
@@ -34,9 +44,15 @@ jobs:
             -var="db_username=${{ secrets.RDS_USERNAME }}" \
             -var="db_password=${{ secrets.RDS_PASSWORD }}"
         env:
+<<<<<<< HEAD
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
+=======
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+>>>>>>> origin/develop
 
       # 5. Terraform Apply
       - name: Terraform Apply
@@ -46,6 +62,7 @@ jobs:
             -var="db_username=${{ secrets.RDS_USERNAME }}" \
             -var="db_password=${{ secrets.RDS_PASSWORD }}"
         env:
+<<<<<<< HEAD
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
@@ -57,6 +74,20 @@ jobs:
           sudo apt-get install -y awscli
 
       # 7. Obter o endpoint do RDS pela AWS CLI
+=======
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+
+      # 6. Instalar/Atualizar AWS CLI com --update
+      - name: Install/Update AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+
+      # 7. Recuperar o endpoint do RDS via AWS CLI
+>>>>>>> origin/develop
       - name: Retrieve Endpoint using AWS CLI
         id: get_endpoint_awscli
         run: |
@@ -66,6 +97,7 @@ jobs:
             --output text)
           echo "DB_ENDPOINT=$RDS_ENDPOINT" >> $GITHUB_ENV
         env:
+<<<<<<< HEAD
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
@@ -75,12 +107,27 @@ jobs:
         run: sleep 30
 
       # 9. Instalar PostgreSQL client para rodar 'psql'
+=======
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+
+      # 8. Aguardar RDS
+      - name: Wait for RDS
+        run: sleep 30
+
+      # 10. Instalar o cliente PostgreSQL
+>>>>>>> origin/develop
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
+<<<<<<< HEAD
       # 10. Executar init.sql no RDS
+=======
+      # 11. Executar init.sql
+>>>>>>> origin/develop
       - name: Execute init.sql
         run: |
           psql "postgres://${{ secrets.RDS_USERNAME }}:${{ secrets.RDS_PASSWORD }}@${{ env.DB_ENDPOINT }}/${{ secrets.RDS_DATABASE }}" -f init.sql
