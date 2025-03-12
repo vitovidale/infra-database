@@ -8,14 +8,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Fazer checkout do repositório
       - name: Check out repository
         uses: actions/checkout@v3
 
+      # 2. Instalar Terraform via Action
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: '1.4.6'
 
+      # 3. Terraform Init
       - name: Terraform Init
         run: terraform init
         env:
@@ -23,6 +26,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
+      # 4. Terraform Plan
       - name: Terraform Plan
         run: |
           terraform plan \
@@ -34,6 +38,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
+      # 5. Terraform Apply
       - name: Terraform Apply
         run: |
           terraform apply -auto-approve \
@@ -45,13 +50,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
-      # Instale a AWS CLI manualmente via binário oficial
-      - name: Install AWS CLI
+      # 6. Atualizar a AWS CLI existente com --update
+      - name: Install/Update AWS CLI
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
-          sudo ./aws/install
+          sudo ./aws/install --update
 
+      # 7. Usar a AWS CLI para recuperar o endpoint do RDS
       - name: Retrieve Endpoint using AWS CLI
         id: get_endpoint_awscli
         run: |
@@ -65,14 +71,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
+      # 8. (Opcional) Aguarda alguns segundos para garantir que o DB já esteja respondendo
       - name: Wait for RDS
         run: sleep 30
 
+      # 9. Instalar o cliente PostgreSQL
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
+      # 10. Executar o init.sql apontando para o endpoint
       - name: Execute init.sql
         run: |
           psql "postgres://${{ secrets.RDS_USERNAME }}:${{ secrets.RDS_PASSWORD }}@${{ env.DB_ENDPOINT }}/${{ secrets.RDS_DATABASE }}" -f init.sql
