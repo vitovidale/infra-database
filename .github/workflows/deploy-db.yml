@@ -1,12 +1,7 @@
 name: Deploy DB
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Ambiente para o deploy (ex: dev, staging, production)"
-        required: true
-        default: "dev"
+  workflow_dispatch:  # Permite rodar manualmente na aba Actions
 
 jobs:
   deploy-db:
@@ -26,15 +21,14 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION:    'us-east-1'  # Ajuste a região conforme necessário
+          AWS_DEFAULT_REGION:    'us-east-1'
 
       - name: Terraform Plan
         run: |
           terraform plan \
             -var="db_name=${{ secrets.RDS_DATABASE }}" \
             -var="db_username=${{ secrets.RDS_USERNAME }}" \
-            -var="db_password=${{ secrets.RDS_PASSWORD }}" \
-            -var="environment=${{ github.event.inputs.environment }}"
+            -var="db_password=${{ secrets.RDS_PASSWORD }}"
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -45,8 +39,7 @@ jobs:
           terraform apply -auto-approve \
             -var="db_name=${{ secrets.RDS_DATABASE }}" \
             -var="db_username=${{ secrets.RDS_USERNAME }}" \
-            -var="db_password=${{ secrets.RDS_PASSWORD }}" \
-            -var="environment=${{ github.event.inputs.environment }}"
+            -var="db_password=${{ secrets.RDS_PASSWORD }}"
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
