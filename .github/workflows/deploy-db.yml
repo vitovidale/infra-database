@@ -3,8 +3,8 @@ name: Deploy Infra Database
 on:
   push:
     branches:
-      - main  # ✅ Deploys when merging to main
-  workflow_dispatch:  # ✅ Allows manual deployment trigger
+      - main  
+  workflow_dispatch:  
 
 jobs:
   terraform-apply:
