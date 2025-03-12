@@ -51,7 +51,7 @@ data "aws_db_subnet_group" "existing_db_subnet" {
 resource "aws_db_subnet_group" "fastfood_db_subnet" {
   count       = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ? 0 : 1
   name        = "fastfood-db-subnet"
-  # Substitua pelas Subnets reais ou use uma variável do tipo list(string)
+  # Exemplo: substitua pelas Subnets reais ou use var.subnet_ids
   subnet_ids  = [
     "subnet-abc123",
     "subnet-def456"
@@ -82,15 +82,8 @@ resource "aws_secretsmanager_secret" "db_password_secret" {
 # Locals para escolher o valor correto (já existente vs. criado)
 ###########################################################
 locals {
-  # Escolhe o ID do Subnet Group
-  db_subnet_name = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ?
-    data.aws_db_subnet_group.existing_db_subnet.id :
-    aws_db_subnet_group.fastfood_db_subnet[0].name
-
-  # Escolhe o Secret ID
-  secret_id = length(data.aws_secretsmanager_secret.existing_db_password_secret.id) > 0 ?
-    data.aws_secretsmanager_secret.existing_db_password_secret.id :
-    aws_secretsmanager_secret.db_password_secret[0].id
+  db_subnet_name = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ? data.aws_db_subnet_group.existing_db_subnet.id : aws_db_subnet_group.fastfood_db_subnet[0].name
+  secret_id      = length(data.aws_secretsmanager_secret.existing_db_password_secret.id) > 0 ? data.aws_secretsmanager_secret.existing_db_password_secret.id : aws_secretsmanager_secret.db_password_secret[0].id
 }
 
 ###########################################################
@@ -118,10 +111,9 @@ resource "aws_db_instance" "fastfood_db" {
   publicly_accessible   = false
   skip_final_snapshot   = true
 
-  # Substitua pelo Security Group que permite acesso ao RDS
+  # Substitua por seu Security Group real
   vpc_security_group_ids = ["sg-xxxxxxxx"]
 
-  # Se existir (data), usamos, senão usamos o resource criado
   db_subnet_group_name   = local.db_subnet_name
 
   tags = {
