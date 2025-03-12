@@ -3,7 +3,8 @@ name: Deploy Infra Database
 on:
   push:
     branches:
-      - develop
+      - main
+  workflow_dispatch: 
 
 jobs:
   terraform-apply:
