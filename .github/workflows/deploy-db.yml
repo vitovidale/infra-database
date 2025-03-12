@@ -1,10 +1,13 @@
 name: Deploy DB
 
+# Dispara manualmente via aba 'Actions' no GitHub
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ambiente para o deploy (ex: dev, staging, production)"
+        required: true
+        default: "dev"
 
 jobs:
   deploy-db:
@@ -17,31 +20,33 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: '1.4.6'  # ou a versão que você preferir
+          terraform_version: '1.4.6'
 
       - name: Terraform Init
         run: terraform init
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION:    'us-east-1'  # ou outra região
+          AWS_DEFAULT_REGION:    'us-east-1'  # Ajuste a região se precisar
 
       - name: Terraform Plan
         run: terraform plan \
           -var="db_name=${{ secrets.RDS_DATABASE }}" \
           -var="db_username=${{ secrets.RDS_USERNAME }}" \
-          -var="db_password=${{ secrets.RDS_PASSWORD }}"
+          -var="db_password=${{ secrets.RDS_PASSWORD }}" \
+          -var="environment=${{ github.event.inputs.environment }}"
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        # Se quiser que só rode no "main" ou se quiser condicionar a algo, pode usar if: ...
         run: terraform apply -auto-approve \
           -var="db_name=${{ secrets.RDS_DATABASE }}" \
           -var="db_username=${{ secrets.RDS_USERNAME }}" \
-          -var="db_password=${{ secrets.RDS_PASSWORD }}"
+          -var="db_password=${{ secrets.RDS_PASSWORD }}" \
+          -var="environment=${{ github.event.inputs.environment }}"
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
