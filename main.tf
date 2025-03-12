@@ -2,45 +2,40 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# ✅ Use Existing VPC
-data "aws_vpc" "existing_vpc" {
-  id = "vpc-035823898b0432060"
+# ✅ Check if the DB Subnet Group Already Exists
+data "aws_db_subnet_group" "existing_db_subnet" {
+  name = "fastfood-db-subnet"
 }
 
-# ✅ Use Existing Subnets
-data "aws_subnet" "existing_subnet_1" {
-  id = "subnet-0e8a9c57e24921ad2"
-}
-
-data "aws_subnet" "existing_subnet_2" {
-  id = "subnet-054f5e7046e524dc7"
-}
-
-# ✅ Create Security Group for RDS
-resource "aws_security_group" "db_sg" {
-  vpc_id = data.aws_vpc.existing_vpc.id
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # ⚠️ Change this to restrict access later
-    description = "Allow PostgreSQL access"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# ✅ Use the Existing Subnet Group If It Exists, Otherwise Create One
+resource "aws_db_subnet_group" "fastfood_db_subnet" {
+  count       = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ? 0 : 1
+  name        = "fastfood-db-subnet"
+  subnet_ids  = [data.aws_subnet.existing_subnet_1.id, data.aws_subnet.existing_subnet_2.id]
+  description = "Managed by Terraform"
 
   tags = {
-    Name = "fastfood-db-security-group"
+    Name = "fastfood-db-subnet-group"
   }
 }
 
-# ✅ Create RDS Database
+# ✅ Check If the Secret Already Exists
+data "aws_secretsmanager_secret" "existing_db_password_secret" {
+  name = "fastfood-db-password"
+}
+
+# ✅ Use Existing Secret If It Exists, Otherwise Create One
+resource "aws_secretsmanager_secret" "db_password_secret" {
+  count = length(data.aws_secretsmanager_secret.existing_db_password_secret.id) > 0 ? 0 : 1
+  name  = "fastfood-db-password"
+}
+
+resource "aws_secretsmanager_secret_version" "db_password_version" {
+  secret_id     = aws_secretsmanager_secret.db_password_secret[0].id
+  secret_string = var.db_password
+}
+
+# ✅ Ensure RDS Uses the Existing Subnet Group
 resource "aws_db_instance" "fastfood_db" {
   allocated_storage    = 20
   storage_type         = "gp2"
@@ -55,45 +50,5 @@ resource "aws_db_instance" "fastfood_db" {
   skip_final_snapshot = true
 
   vpc_security_group_ids = [aws_security_group.db_sg.id]
-  db_subnet_group_name   = aws_db_subnet_group.fastfood_db_subnet.name
-}
-
-# ✅ Create Subnet Group for RDS
-resource "aws_db_subnet_group" "fastfood_db_subnet" {
-  name       = "fastfood-db-subnet"
-  subnet_ids = [
-    data.aws_subnet.existing_subnet_1.id,
-    data.aws_subnet.existing_subnet_2.id
-  ]
-
-  tags = {
-    Name = "fastfood-db-subnet-group"
-  }
-}
-
-# ✅ Store Database Password in AWS Secrets Manager
-resource "aws_secretsmanager_secret" "db_password_secret" {
-  name = "fastfood-db-password"
-}
-
-resource "aws_secretsmanager_secret_version" "db_password_version" {
-  secret_id     = aws_secretsmanager_secret.db_password_secret.id
-  secret_string = var.db_password
-}
-
-# ✅ Variables for Database Credentials
-variable "db_username" {
-  description = "Database username"
-  type        = string
-}
-
-variable "db_password" {
-  description = "Database password"
-  type        = string
-  sensitive   = true
-}
-
-variable "db_name" {
-  description = "Database name"
-  type        = string
+  db_subnet_group_name   = coalesce(data.aws_db_subnet_group.existing_db_subnet.id, "fastfood-db-subnet")
 }
