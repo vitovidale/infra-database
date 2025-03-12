@@ -8,11 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Fazer checkout do repositório
+      # 1. Fazer checkout do repositório (para ter main.tf e init.sql)
       - name: Check out repository
         uses: actions/checkout@v3
 
-      # 2. Instalar Terraform via Action
+      # 2. Instalar Terraform (v1.4.6)
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
@@ -50,14 +50,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
-      # 6. Atualizar a AWS CLI existente com --update
+      # 6. Atualizar a AWS CLI (caso já tenha uma versão instalada)
       - name: Install/Update AWS CLI
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
 
-      # 7. Obter endpoint do RDS via AWS CLI
+      # 7. Recuperar endpoint do RDS via AWS CLI
       - name: Retrieve Endpoint using AWS CLI
         id: get_endpoint_awscli
         run: |
@@ -71,7 +71,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:    'us-east-1'
 
-      # 8. (Opcional) Aguardar alguns segundos
+      # 8. Aguardar alguns segundos para garantir readiness
       - name: Wait for RDS
         run: sleep 30
 
@@ -81,7 +81,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      # 10. Executar init.sql
+      # 10. Executar init.sql apontando para o endpoint
       - name: Execute init.sql
         run: |
           psql "postgres://${{ secrets.RDS_USERNAME }}:${{ secrets.RDS_PASSWORD }}@${{ env.DB_ENDPOINT }}/${{ secrets.RDS_DATABASE }}" -f init.sql
