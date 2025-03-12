@@ -32,7 +32,7 @@ variable "db_password" {
 }
 
 ###########################################################
-# Hardcoded: VPC, SG e Subnets
+# Hardcoded: VPC, SG e Subnets (não alterados)
 ###########################################################
 locals {
   vpc_id     = "vpc-035823898b0432060"
@@ -41,7 +41,7 @@ locals {
 }
 
 ###########################################################
-# Verifica se já existe o DB Subnet Group "fastfood-db-subnet"
+# Verifica se já existe um DB Subnet Group "fastfood-db-subnet"
 ###########################################################
 data "aws_db_subnet_group" "existing_db_subnet" {
   name = "fastfood-db-subnet"
@@ -76,11 +76,14 @@ resource "aws_secretsmanager_secret" "db_password_secret" {
 }
 
 ###########################################################
-# Locals para selecionar DB Subnet Group e Secret
+# Locals para selecionar o DB Subnet Group e o Secret
 ###########################################################
 locals {
-  db_subnet_name = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ? data.aws_db_subnet_group.existing_db_subnet.id : aws_db_subnet_group.fastfood_db_subnet[0].name
-  secret_id      = length(data.aws_secretsmanager_secret.existing_db_password_secret.id) > 0 ? data.aws_secretsmanager_secret.existing_db_password_secret.id : aws_secretsmanager_secret.db_password_secret[0].id
+  db_subnet_name = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ?
+    data.aws_db_subnet_group.existing_db_subnet.id : aws_db_subnet_group.fastfood_db_subnet[0].name
+
+  secret_id = length(data.aws_secretsmanager_secret.existing_db_password_secret.id) > 0 ?
+    data.aws_secretsmanager_secret.existing_db_password_secret.id : aws_secretsmanager_secret.db_password_secret[0].id
 }
 
 ###########################################################
@@ -92,13 +95,32 @@ resource "aws_secretsmanager_secret_version" "db_password_version" {
 }
 
 ###########################################################
-# Cria um novo Internet Gateway para a VPC
+# Verifica se já existe um IGW na VPC
+###########################################################
+data "aws_internet_gateway" "existing_igw" {
+  filter {
+    name   = "vpc-id"
+    values = [local.vpc_id]
+  }
+}
+
+###########################################################
+# Cria um novo IGW se não houver nenhum
 ###########################################################
 resource "aws_internet_gateway" "new_igw" {
+  count  = length(data.aws_internet_gateway.existing_igw.id) > 0 ? 0 : 1
   vpc_id = local.vpc_id
   tags = {
     Name = "fastfood-new-igw"
   }
+}
+
+###########################################################
+# Define o IGW efetivo: se já existir, usa o existente; senão, o novo
+###########################################################
+locals {
+  effective_igw_id = length(data.aws_internet_gateway.existing_igw.id) > 0 ?
+    data.aws_internet_gateway.existing_igw.id : aws_internet_gateway.new_igw[0].id
 }
 
 ###########################################################
@@ -109,7 +131,7 @@ resource "aws_route_table" "public_rt" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.new_igw.id
+    gateway_id = local.effective_igw_id
   }
 
   tags = {
@@ -118,7 +140,7 @@ resource "aws_route_table" "public_rt" {
 }
 
 ###########################################################
-# Associa a Tabela de Rotas Pública às Subnets
+# Associa a Tabela de Rotas Pública a cada Subnet
 ###########################################################
 resource "aws_route_table_association" "public_subnet_association" {
   count          = length(local.subnet_ids)
@@ -143,13 +165,10 @@ resource "aws_db_instance" "fastfood_db" {
   skip_final_snapshot  = true
   vpc_security_group_ids = [ local.sg_id ]
   db_subnet_group_name   = local.db_subnet_name
-
   tags = {
     Project     = "FastFood"
     Environment = "DEV"
   }
-
-  # Garante que o RDS será criado após a configuração de internet
   depends_on = [
     aws_internet_gateway.new_igw,
     aws_route_table.public_rt,
