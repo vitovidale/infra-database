@@ -34,7 +34,7 @@ variable "db_password" {
 locals {
   # Hardcoded para sua infraestrutura
   vpc_id       = "vpc-035823898b0432060"
-  sg_id        = "sg-017a0cbb684620adc"   # Este SG deve permitir tráfego na porta 5432
+  sg_id        = "sg-0481ba4248fe8399c"   # Este SG deve permitir tráfego na porta 5432
   subnet_ids   = ["subnet-0e8a9c57e24921ad2", "subnet-054f5e7046e524dc7"]
 
   db_subnet_name = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ? data.aws_db_subnet_group.existing_db_subnet.id : aws_db_subnet_group.fastfood_db_subnet[0].name
