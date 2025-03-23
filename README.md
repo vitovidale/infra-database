@@ -4,13 +4,13 @@
 
 ---
 
-## 📖 Visão Geral
+## Visão Geral
 
 Este repositório contém o esquema e os dados iniciais do banco de dados do FastFood‑App. Usamos **Amazon RDS for PostgreSQL** pela sua gestão automática (backups, patches), alta disponibilidade e escalabilidade.
 
 ---
 
-## 🗂 Modelo de Dados
+## Modelo de Dados
 
 ![Diagrama ER](https://github.com/user-attachments/assets/a53834c2-3fb9-4360-838e-fb80d7fefe31)
 
@@ -22,7 +22,7 @@ Este repositório contém o esquema e os dados iniciais do banco de dados do Fas
 
 ---
 
-## 🚀 Deploy (via GitHub Actions)
+## Deploy (via GitHub Actions)
 
 Toda a criação da instância RDS + execução do script `init.sql` é feita automaticamente pelo workflow GitHub Actions.
 
