@@ -14,13 +14,13 @@ provider "aws" {
 
 variable "db_name" {
   type        = string
-  description = "Nome do banco de dados RDS."
+  description = "Name"
   default     = "fastfooddb"
 }
 
 variable "db_username" {
   type        = string
-  description = "Usuário do banco de dados RDS."
+  description = "user"
   default     = "admin"
 }
 
@@ -28,13 +28,12 @@ variable "db_password" {
   type        = string
   description = "Senha do banco de dados RDS."
   sensitive   = true
-  default     = "AlterarSenhaAqui"
+  default     = "pass"
 }
 
 locals {
-  # Hardcoded para sua infraestrutura
   vpc_id       = "vpc-035823898b0432060"
-  sg_id        = "sg-054d5de29959c8bc5"   # Este SG deve permitir tráfego na porta 5432
+  sg_id        = "sg-054d5de29959c8bc5"  
   subnet_ids   = ["subnet-0e8a9c57e24921ad2", "subnet-054f5e7046e524dc7"]
 
   db_subnet_name = length(data.aws_db_subnet_group.existing_db_subnet.id) > 0 ? data.aws_db_subnet_group.existing_db_subnet.id : aws_db_subnet_group.fastfood_db_subnet[0].name
